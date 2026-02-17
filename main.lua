@@ -1,15 +1,7 @@
-local json = require("cjson")
-local http = require("socket.http")
-local ltn12 = require("ltn12")
-
+-- CC:Tweaked script para requisitar design de construção ao OpenRouter
 local OPENROUTER_API_KEY = "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"
 
-local request_body = {
-  model = "google/gemini-2.0-flash-001",
-  messages = {
-    {
-      role = "system",
-      content = [[You are a system that designs Minecraft Turtle constructions.
+local SYSTEM_PROMPT = [[You are a system that designs Minecraft Turtle constructions.
 
 RULES (MANDATORY):
 - Output ONLY valid JSON
@@ -50,47 +42,66 @@ CONSTRAINTS:
 - Max size: 9x9x9
 - Build must be symmetric and visually impressive
 - Build must be constructible layer-by-layer along Y axis
-- Use glowstone sparingly for highlights only]]
+- Use glowstone sparingly for highlights only
+]]
+
+local USER_PROMPT = "Design a futuristic 3D geometric symbol suitable as a tech logo. Clean, hollow, symmetric, visually impressive when built step by step."
+
+local request_body = {
+  model = "google/gemini-2.0-flash-001",
+  messages = {
+    {
+      role = "system",
+      content = SYSTEM_PROMPT
     },
     {
       role = "user",
-      content = "Design a futuristic 3D geometric symbol suitable as a tech logo. Clean, hollow, symmetric, visually impressive when built step by step."
+      content = USER_PROMPT
     }
   }
 }
+local request_json = textutils.serialiseJSON(request_body)
 
-local response_body = {}
 local headers = {
   ["Authorization"] = "Bearer " .. OPENROUTER_API_KEY,
-  ["Content-Type"] = "application/json",
-  ["Content-Length"] = #json.encode(request_body)
+  ["Content-Type"] = "application/json"
 }
 
-local response_code, response_headers, response_status = http.request {
-  url = "https://openrouter.ai/api/v1/chat/completions",
-  method = "POST",
-  headers = headers,
-  source = ltn12.source.string(json.encode(request_body)),
-  sink = ltn12.sink.table(response_body)
-}
+-- Requisição HTTP
+print("Enviando requisição ao OpenRouter...")
+local response = http.post(
+  "https://openrouter.ai/api/v1/chat/completions",
+  request_json,
+  headers
+)
 
-if response_code == 200 then
-  local response_text = table.concat(response_body)
-  local response_json = json.decode(response_text)
+if response then
+  local response_text = response.readAll()
+  response.close()
+  
+  local response_json = textutils.unserialiseJSON(response_text)
   
   if response_json and response_json.choices and response_json.choices[1] then
     local design = response_json.choices[1].message.content
-    print("Design Response:")
+    print("\nDesign recebido:")
     print(design)
     
-    -- Try to decode the design as JSON if it's valid
-    local success, design_json = pcall(json.decode, design)
+    -- Tenta decodificar o design como JSON
+    local success, design_json = pcall(textutils.unserialiseJSON, design)
     if success then
-      print("\nParsed Design:")
-      print(json.encode(design_json, { indent = true }))
+      print("\nDesign parseado com sucesso!")
+      -- Salva em arquivo
+      local f = fs.open("design.json", "w")
+      f.write(textutils.serialiseJSON(design_json))
+      f.close()
+      print("Salvo em design.json")
+    else
+      print("Aviso: Design não é JSON válido")
     end
+  else
+    print("Erro: Resposta inválida")
+    print(response_text)
   end
 else
-  print("Error: HTTP " .. response_code)
-  print(table.concat(response_body))
+  print("Erro: Falha na requisição HTTP")
 end
