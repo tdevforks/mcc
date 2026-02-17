@@ -1,50 +1,123 @@
-if not http then
-  error("HTTP API desativada no servidor")
-end
+-----------------------------
+-- CONFIGURAÇÃO DO TEXTO --
+-----------------------------
 
-local domains = {
-  -- clássicos do CC
-  "https://pastebin.com",
-  "https://raw.githubusercontent.com",
-  "https://github.com",
-  "https://api.github.com",
+local TEXT = "ALFACE"
+local HEIGHT = 5        -- altura das letras
+local DEPTH = 2         -- profundidade 3D
+local SPACING = 1       -- espaço entre letras
+local BLOCK = "minecraft:stone"
 
-  -- genéricos
-  "https://example.com",
-  "https://httpbin.org",
+-----------------------------
+-- FONTE 5x5 SIMPLES ------
+-----------------------------
 
-  -- cloud / apis comuns
-  "https://jsonplaceholder.typicode.com",
-  "https://api.ipify.org",
-
-  -- IA / APIs modernas (normalmente BLOQUEADAS)
-  "https://openrouter.ai",
-  "https://api.openai.com",
-  "https://generativelanguage.googleapis.com",
-
-  -- outros
-  "https://thomasdev.xyz",
-  "https://cdn.jsdelivr.net",
-  "https://unpkg.com",
-  "https://paste.ee",
-  "https://gist.githubusercontent.com"
+local FONT = {
+  A = {
+    " 1 ",
+    "1 1",
+    "111",
+    "1 1",
+    "1 1",
+  },
+  L = {
+    "1  ",
+    "1  ",
+    "1  ",
+    "1  ",
+    "111",
+  },
+  F = {
+    "111",
+    "1  ",
+    "111",
+    "1  ",
+    "1  ",
+  },
+  C = {
+    " 11",
+    "1  ",
+    "1  ",
+    "1  ",
+    " 11",
+  },
+  E = {
+    "111",
+    "1  ",
+    "111",
+    "1  ",
+    "111",
+  }
 }
 
-print("🔎 Testando domínios HTTP permitidos\n")
+-----------------------------
+-- FUNÇÕES BÁSICAS --------
+-----------------------------
 
-for _, url in ipairs(domains) do
-  local ok, err = http.checkURL(url)
-
-  if ok then
-    print("1  ", url)
-  else
-    print("0  ", url)
-    if err then
-      print("   ↳", err)
-    end
+local function place()
+  while not turtle.placeDown() do
+    turtle.digDown()
+    sleep(0.2)
   end
-
-  sleep(0.2) -- evita spam
 end
 
-print("\n🏁 Teste finalizado")
+local function forward()
+  while not turtle.forward() do
+    turtle.dig()
+    sleep(0.2)
+  end
+end
+
+-----------------------------
+-- CONSTRÓI UMA LETRA -----
+-----------------------------
+
+local function buildLetter(pattern)
+  for z = 1, DEPTH do
+    for y = HEIGHT, 1, -1 do
+      local row = pattern[HEIGHT - y + 1]
+      for x = 1, #row do
+        if row:sub(x, x) == "1" then
+          place()
+        end
+        forward()
+      end
+
+      turtle.back()
+      turtle.back()
+      turtle.back()
+      turtle.up()
+    end
+
+    for _ = 1, HEIGHT do turtle.down() end
+    turtle.turnRight()
+    forward()
+    turtle.turnLeft()
+  end
+
+  turtle.turnLeft()
+  for _ = 1, DEPTH do forward() end
+  turtle.turnRight()
+
+  for _ = 1, SPACING do forward() end
+end
+
+-----------------------------
+-- PROGRAMA PRINCIPAL -----
+-----------------------------
+
+print("🏗️ Construindo texto 3D:", TEXT)
+
+for i = 1, #TEXT do
+  local char = TEXT:sub(i, i)
+  local letter = FONT[char]
+
+  if letter then
+    buildLetter(letter)
+  else
+    print("⚠️ Letra não suportada:", char)
+    for _ = 1, 4 + SPACING do forward() end
+  end
+end
+
+print("✅ Texto 3D finalizado")
