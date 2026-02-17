@@ -1,6 +1,6 @@
 -- CC:Tweaked script para requisitar design de construção ao OpenRouter
 
-local OPENROUTER_API_KEY = "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"
+local API_KEY = "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"
 
 if not http then
   error("HTTP desativado (http.enable = false)")
