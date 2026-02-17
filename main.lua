@@ -36,11 +36,11 @@ for _, url in ipairs(domains) do
   local ok, err = http.checkURL(url)
 
   if ok then
-    print("✅ PERMITIDO  ", url)
+    print("1  ", url)
   else
-    print("❌ BLOQUEADO  ", url)
+    print("0  ", url)
     if err then
-      print("   ↳ motivo:", err)
+      print("   ↳", err)
     end
   end
 
