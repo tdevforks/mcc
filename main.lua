@@ -26,6 +26,18 @@ local request_body = {
   model = "google/gemini-2.0-flash-001",
   messages = {
     {
+      role = "user",
+      content = "Say hello in JSON format"
+    }
+  }
+}
+
+-- VERSÃO ORIGINAL COMENTADA (com instruções detalhadas):
+--[[
+local request_body = {
+  model = "google/gemini-2.0-flash-001",
+  messages = {
+    {
       role = "system",
       content = table.concat({
         "You are a system that designs Minecraft Turtle constructions.",
@@ -76,6 +88,7 @@ local request_body = {
     }
   }
 }
+--]]
 
 local request_json = textutils.serializeJSON(request_body)
 
