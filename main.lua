@@ -2,8 +2,24 @@
 
 local OPENROUTER_API_KEY = "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"
 
+-- Função para debug
+local function debug_error(title, details)
+  print("\n" .. string.rep("=", 50))
+  print("❌ ERRO: " .. title)
+  print(string.rep("=", 50))
+  if type(details) == "table" then
+    for k, v in pairs(details) do
+      print("  " .. k .. ": " .. tostring(v))
+    end
+  else
+    print("  " .. tostring(details))
+  end
+  print(string.rep("=", 50) .. "\n")
+end
+
 if not http then
-  error("HTTP API desativada (http.enable = false)")
+  debug_error("HTTP API", "HTTP não está habilitado (http.enable = false no config)")
+  error("HTTP API desativada")
 end
 
 local request_body = {
@@ -77,7 +93,18 @@ local ok, response = pcall(http.post,
   headers
 )
 
-if not ok or not response then
+if not ok then
+  debug_error("Erro ao fazer requisição HTTP", {
+    ["mensagem"] = response,
+    ["status_ok"] = tostring(ok)
+  })
+  error("Requisição HTTP falhou")
+end
+
+if not response then
+  debug_error("Resposta vazia do servidor", {
+    ["response_obj"] = tostring(response)
+  })
   error("Falha na requisição HTTP")
 end
 
@@ -86,16 +113,42 @@ local status = response.getResponseCode()
 response.close()
 
 if status ~= 200 then
-  error("Erro HTTP " .. status .. "\n" .. response_text)
+  debug_error("Erro HTTP do OpenRouter", {
+    ["status_code"] = status,
+    ["resposta"] = response_text:sub(1, 500) -- primeiros 500 chars
+  })
+  error("Erro HTTP " .. status)
 end
 
 local response_json = textutils.unserializeJSON(response_text)
-if not response_json
-  or not response_json.choices
-  or not response_json.choices[1]
-  or not response_json.choices[1].message
-  or type(response_json.choices[1].message.content) ~= "string"
-then
+if not response_json then
+  debug_error("Resposta não é JSON válido", {
+    ["status"] = status,
+    ["resposta_raw"] = response_text:sub(1, 500)
+  })
+  error("Resposta inválida do OpenRouter")
+end
+
+if not response_json.choices or not response_json.choices[1] then
+  debug_error("Estrutura de choices inválida", {
+    ["keys"] = table.concat(type(response_json) == "table" and not not next or {}, ", "),
+    ["response"] = textutils.serializeJSON(response_json):sub(1, 300)
+  })
+  error("Resposta inválida do OpenRouter")
+end
+
+if not response_json.choices[1].message then
+  debug_error("Message não encontrada na resposta", {
+    ["choice_1_keys"] = textutils.serializeJSON(response_json.choices[1]):sub(1, 300)
+  })
+  error("Resposta inválida do OpenRouter")
+end
+
+if type(response_json.choices[1].message.content) ~= "string" then
+  debug_error("Content não é string", {
+    ["content_type"] = type(response_json.choices[1].message.content),
+    ["content"] = tostring(response_json.choices[1].message.content):sub(1, 300)
+  })
   error("Resposta inválida do OpenRouter")
 end
 
@@ -104,14 +157,41 @@ print("📦 Design recebido da IA")
 
 -- Tenta parsear o JSON do design
 local success, design_json = pcall(textutils.unserializeJSON, design_text)
-if not success or type(design_json) ~= "table" then
+if not success then
+  debug_error("Erro ao parsear design JSON", {
+    ["erro"] = tostring(design_json),
+    ["design_text_amostra"] = design_text:sub(1, 500)
+  })
+  error("Design retornado não é JSON válido")
+end
+
+if type(design_json) ~= "table" then
+  debug_error("Design não é uma tabela", {
+    ["tipo"] = type(design_json),
+    ["valor"] = tostring(design_json):sub(1, 500)
+  })
   error("Design retornado não é JSON válido")
 end
 
 -- Salva o blueprint
-local f = fs.open("design.json", "w")
-f.write(textutils.serializeJSON(design_json))
+local f, err = fs.open("design.json", "w")
+if not f then
+  debug_error("Erro ao abrir arquivo design.json", {
+    ["erro"] = tostring(err),
+    ["modo"] = "write"
+  })
+  error("Não foi possível criar design.json")
+end
+
+local write_ok, write_err = pcall(f.write, textutils.serializeJSON(design_json))
 f.close()
+
+if not write_ok then
+  debug_error("Erro ao escrever em design.json", {
+    ["erro"] = tostring(write_err)
+  })
+  error("Erro ao salvar blueprint")
+end
 
 print("✅ Blueprint salvo em design.json")
 print("🏗️ Pronto para construção")
