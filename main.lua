@@ -33,7 +33,7 @@ local request_body = {
 }
 
 -- VERSÃO ORIGINAL COMENTADA (com instruções detalhadas):
---[[
+--[=[
 local request_body = {
   model = "google/gemini-2.0-flash-001",
   messages = {
@@ -88,7 +88,7 @@ local request_body = {
     }
   }
 }
---]]
+]=]
 
 local request_json = textutils.serializeJSON(request_body)
 
