@@ -1,16 +1,15 @@
------------------------------
--- CONFIGURAÇÃO DO TEXTO --
------------------------------
+-------------------
+-- CONFIGURAÇÃO --
+-------------------
 
 local TEXT = "ALFACE"
-local HEIGHT = 5        -- altura das letras
-local DEPTH = 2         -- profundidade 3D
-local SPACING = 1       -- espaço entre letras
-local BLOCK = "minecraft:stone"
+local DEPTH = 2
+local SPACING = 1
+local BLOCK_SLOT = 1
 
------------------------------
--- FONTE 5x5 SIMPLES ------
------------------------------
+-------------------
+-- FONTE 5x5 -----
+-------------------
 
 local FONT = {
   A = {
@@ -50,32 +49,34 @@ local FONT = {
   }
 }
 
------------------------------
--- FUNÇÕES BÁSICAS --------
------------------------------
+-------------------
+-- HELPERS ------
+-------------------
+
+turtle.select(BLOCK_SLOT)
 
 local function place()
-  while not turtle.placeDown() do
-    turtle.digDown()
-    sleep(0.2)
+  while not turtle.place() do
+    turtle.dig()
+    sleep(0.1)
   end
 end
 
 local function forward()
   while not turtle.forward() do
     turtle.dig()
-    sleep(0.2)
+    sleep(0.1)
   end
 end
 
------------------------------
--- CONSTRÓI UMA LETRA -----
------------------------------
+-------------------
+-- LETRA --------
+-------------------
 
 local function buildLetter(pattern)
   for z = 1, DEPTH do
-    for y = HEIGHT, 1, -1 do
-      local row = pattern[HEIGHT - y + 1]
+    for y = 1, #pattern do
+      local row = pattern[y]
       for x = 1, #row do
         if row:sub(x, x) == "1" then
           place()
@@ -89,7 +90,7 @@ local function buildLetter(pattern)
       turtle.up()
     end
 
-    for _ = 1, HEIGHT do turtle.down() end
+    for _ = 1, #pattern do turtle.down() end
     turtle.turnRight()
     forward()
     turtle.turnLeft()
@@ -102,22 +103,22 @@ local function buildLetter(pattern)
   for _ = 1, SPACING do forward() end
 end
 
------------------------------
--- PROGRAMA PRINCIPAL -----
------------------------------
+-------------------
+-- MAIN ----------
+-------------------
 
 print("🏗️ Construindo texto 3D:", TEXT)
 
 for i = 1, #TEXT do
-  local char = TEXT:sub(i, i)
-  local letter = FONT[char]
+  local c = TEXT:sub(i, i)
+  local letter = FONT[c]
 
   if letter then
     buildLetter(letter)
   else
-    print("⚠️ Letra não suportada:", char)
-    for _ = 1, 4 + SPACING do forward() end
+    print("Letra não suportada:", c)
+    forward()
   end
 end
 
-print("✅ Texto 3D finalizado")
+print("✅ Finalizado")
