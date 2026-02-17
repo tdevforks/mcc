@@ -1,33 +1,50 @@
--- CC:Tweaked script para requisitar design de construção ao OpenRouter
-
-local key = "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"
-
 if not http then
-  error("HTTP desativado")
+  error("HTTP API desativada no servidor")
 end
 
-local body = textutils.serializeJSON({
-  model = "google/gemini-2.0-flash-001",
-  messages = {
-    { role = "user", content = "ping" }
-  }
-})
+local domains = {
+  -- clássicos do CC
+  "https://pastebin.com",
+  "https://raw.githubusercontent.com",
+  "https://github.com",
+  "https://api.github.com",
 
-local res, err = http.post(
-  "https://openrouter.ai/api/v1/chat/completions",
-  body,
-  {
-    ["Authorization"] = "Bearer " .. key,
-    ["Content-Type"]  = "application/json",
-    ["HTTP-Referer"]  = "http://localhost",
-    ["X-Title"]       = "CC-Tweaked Test"
-  }
-)
+  -- genéricos
+  "https://example.com",
+  "https://httpbin.org",
 
-if not res then
-  error("Falha HTTP: " .. tostring(err))
+  -- cloud / apis comuns
+  "https://jsonplaceholder.typicode.com",
+  "https://api.ipify.org",
+
+  -- IA / APIs modernas (normalmente BLOQUEADAS)
+  "https://openrouter.ai",
+  "https://api.openai.com",
+  "https://generativelanguage.googleapis.com",
+
+  -- outros
+  "https://thomasdev.xyz",
+  "https://cdn.jsdelivr.net",
+  "https://unpkg.com",
+  "https://paste.ee",
+  "https://gist.githubusercontent.com"
+}
+
+print("🔎 Testando domínios HTTP permitidos\n")
+
+for _, url in ipairs(domains) do
+  local ok, err = http.checkURL(url)
+
+  if ok then
+    print("✅ PERMITIDO  ", url)
+  else
+    print("❌ BLOQUEADO  ", url)
+    if err then
+      print("   ↳ motivo:", err)
+    end
+  end
+
+  sleep(0.2) -- evita spam
 end
 
-print("Status:", res.getResponseCode())
-print(res.readAll())
-res.close()
+print("\n🏁 Teste finalizado")
